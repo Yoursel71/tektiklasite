@@ -49,8 +49,8 @@ if (!packageCols.some((c) => c.name === "price_amount")) {
   const backfill = db.prepare(
     "UPDATE packages SET price_amount = ? WHERE name = ? AND price_amount IS NULL"
   );
-  backfill.run(490_000, "Başlangıç");
-  backfill.run(990_000, "Profesyonel");
+  backfill.run(390_000, "Başlangıç");
+  backfill.run(790_000, "Profesyonel");
 }
 
 export function seed(adminUsername: string, adminPassword: string) {
@@ -60,6 +60,15 @@ export function seed(adminUsername: string, adminPassword: string) {
     `INSERT INTO users (username, password_hash) VALUES (?, ?)
      ON CONFLICT(username) DO UPDATE SET password_hash = excluded.password_hash`
   ).run(adminUsername, hash);
+
+  // Eski varsayılan fiyatları kullanan mevcut kurulumları güncelle; panelden
+  // özelleştirilmiş fiyatlara dokunma.
+  const updateDefaultPrice = db.prepare(
+    "UPDATE packages SET price = ?, price_amount = ? WHERE name = ? AND price = ?"
+  );
+  updateDefaultPrice.run("₺3.900", 390_000, "Başlangıç", "₺4.900");
+  updateDefaultPrice.run("₺7.900", 790_000, "Profesyonel", "₺9.900");
+  updateDefaultPrice.run("₺14.900+", null, "Kurumsal", "₺19.900+");
 
   const count = db.prepare("SELECT COUNT(*) AS c FROM packages").get() as { c: number };
   if (count.c > 0) return;
@@ -72,15 +81,15 @@ export function seed(adminUsername: string, adminPassword: string) {
   const defaults = [
     {
       name: "Başlangıç",
-      price: "₺4.900",
-      price_amount: 490_000,
+      price: "₺3.900",
+      price_amount: 390_000,
       period: "proje başı",
       badge: null,
       features: JSON.stringify([
         "5 sayfaya kadar kurumsal site",
-        "Mobil uyumlu (responsive) tasarım",
+        "Mobil uyumlu özel tasarım",
         "Temel SEO kurulumu",
-        "İletişim formu",
+        "İletişim formu + WhatsApp",
         "SSL + hosting kurulumu",
         "1 ay ücretsiz destek",
       ]),
@@ -89,15 +98,15 @@ export function seed(adminUsername: string, adminPassword: string) {
     },
     {
       name: "Profesyonel",
-      price: "₺9.900",
-      price_amount: 990_000,
+      price: "₺7.900",
+      price_amount: 790_000,
       period: "proje başı",
       badge: "En Popüler",
       features: JSON.stringify([
-        "10+ sayfa, özel tasarım",
+        "10+ sayfa, markana özel tasarım",
         "Blog / içerik yönetim sistemi",
         "Gelişmiş SEO + hız optimizasyonu",
-        "Google Analytics entegrasyonu",
+        "Analytics ve Search Console kurulumu",
         "Çoklu dil altyapısı",
         "3 ay ücretsiz destek",
       ]),
@@ -106,7 +115,7 @@ export function seed(adminUsername: string, adminPassword: string) {
     },
     {
       name: "Kurumsal",
-      price: "₺19.900+",
+      price: "₺14.900+",
       price_amount: null,
       period: "proje başı",
       badge: null,
@@ -116,7 +125,7 @@ export function seed(adminUsername: string, adminPassword: string) {
         "E-ticaret / ödeme entegrasyonu",
         "Üyelik ve yetkilendirme sistemi",
         "Performans ve güvenlik denetimi",
-        "6 ay ücretsiz destek + SLA",
+        "6 ay ücretsiz destek",
       ]),
       highlighted: 0,
       sort: 3,

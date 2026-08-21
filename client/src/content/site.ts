@@ -11,7 +11,7 @@ export const site = {
   ],
   hero: {
     eyebrow: "TEKTIKLASITE.COM® — WEB STÜDYOSU",
-    availability: "TEMMUZ'26 → 2 PROJE İÇİN YER VAR",
+    availability: "YENİ PROJE ALIMI AÇIK",
     titleTop: "TEK TIKLA.",
     titleBottom: "Gerisi bizde.",
     rotatingPrefix: "sana",
@@ -21,6 +21,7 @@ export const site = {
       "İsim şaka değil: senin tarafında iş gerçekten tek tık — formu doldur. Tasarım, kod, hosting, yayın... gerisini biz hallederiz. Şablonsuz, sıfırdan.",
     ctaPrimary: "O tek tıkı at",
     ctaSecondary: "İşlere bak",
+    proofs: ["Ücretsiz keşif", "Sabit fiyat", "24 saatte dönüş"],
   },
 
   manifesto: {
@@ -47,11 +48,6 @@ export const site = {
         detail: "Dijital pazarlama ajansı",
         url: "https://whitemedia.com.tr",
       },
-      {
-        name: "Matematik Pusulası",
-        detail: "Dijital eğitim dergisi",
-        url: "https://matematikpusulasi.vercel.app",
-      },
     ],
   },
   services: [
@@ -62,22 +58,22 @@ export const site = {
     },
 
     {
-      no: "03",
+      no: "02",
       title: "Landing Page",
       detail: "Tek sayfa, tek hedef: ziyaretçiyi müşteriye çevirmek. Reklam bütçen boşa akmasın.",
     },
     {
-      no: "04",
+      no: "03",
       title: "Admin Panel",
       detail: "Fiyat, içerik, ürün — hepsini kendin yönet. Her değişiklik için bize muhtaç olma.",
     },
     {
-      no: "05",
+      no: "04",
       title: "SEO & Hız",
       detail: "Site var ama Google'da yok? Teknik SEO + performans. Ölçüyoruz, düzeltiyoruz.",
     },
     {
-      no: "06",
+      no: "05",
       title: "Bakım & Destek",
       detail: "Yayından sonra ortadan kaybolmuyoruz. Güncelleme, yedek, acil müdahale.",
     },
@@ -120,7 +116,7 @@ export const site = {
         "Mobil uyumlu tasarım",
         "Temel SEO kurulumu",
       ],
-      price: "₺14.900",
+      price: "₺11.900",
     },
     {
       title: "WhiteMedia",
@@ -135,21 +131,7 @@ export const site = {
         "Hız optimizasyonu",
         "SEO altyapısı",
       ],
-      price: "₺9.900",
-    },
-    {
-      title: "Matematik Pusulası",
-      category: "Eğitim Platformu",
-      url: "https://matematikpusulasi.vercel.app",
-      description: "Lise öğrencileri için dijital matematik dergisi platformu.",
-      features: [
-        "Dijital dergi okuma deneyimi",
-        "Sayı ve içerik arşivi",
-        "Mobilde akıcı okuma",
-        "Çok hızlı açılış",
-        "Kolay içerik güncelleme",
-      ],
-      price: "₺4.900",
+      price: "₺7.900",
     },
   ],
   faq: [
@@ -173,6 +155,10 @@ export const site = {
       q: "Teslimden sonra ortadan kaybolur musunuz?",
       a: "Hayır. Her pakette ücretsiz destek süresi var (1-6 ay). Sonrasında dilersen aylık bakım anlaşmasıyla devam ederiz. Mesajına 24 saat içinde dönüyoruz.",
     },
+    {
+      q: "Daha küçük bütçeyle başlayabilir miyim?",
+      a: "Evet. Tek hedefli landing page projeleri ₺2.200 seviyesinden başlıyor. Önce satış veya iletişim getirecek çekirdek sayfayı yayına alıp ihtiyaç oldukça büyütebiliriz.",
+    },
   ],
   footer: {
     ctaBig: "PROJEN Mİ VAR? TEK",
@@ -180,5 +166,6 @@ export const site = {
     description: "Şablon değil, sıfırdan kod. Trabzon'dan tüm Türkiye'ye.",
     email: "tektiklasite@gmail.com",
     phone: "+90 530 842 00 61",
+    whatsapp: "905308420061",
   },
 } as const;

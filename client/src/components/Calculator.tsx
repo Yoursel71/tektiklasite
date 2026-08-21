@@ -6,21 +6,21 @@ interface CalculatorProps {
 }
 
 const SITE_TYPES = [
-  { id: "landing", label: "Landing Page", base: 2500 },
-  { id: "kurumsal", label: "Kurumsal Site", base: 4500 },
-  { id: "eticaret", label: "E-Ticaret", base: 12000 },
-  { id: "ozel", label: "Özel Yazılım", base: 18000 },
+  { id: "landing", label: "Landing Page", base: 2200 },
+  { id: "kurumsal", label: "Kurumsal Site", base: 3900 },
+  { id: "eticaret", label: "E-Ticaret", base: 9900 },
+  { id: "ozel", label: "Özel Yazılım", base: 14900 },
 ] as const;
 
 const EXTRAS = [
-  { id: "blog", label: "Blog / İçerik Sistemi", price: 2000 },
-  { id: "lang", label: "Çoklu Dil", price: 1500 },
-  { id: "seo", label: "SEO Paketi", price: 1500 },
-  { id: "panel", label: "Admin Panel", price: 4000 },
+  { id: "blog", label: "Blog / İçerik Sistemi", price: 1500 },
+  { id: "lang", label: "Çoklu Dil", price: 1000 },
+  { id: "seo", label: "SEO Paketi", price: 1000 },
+  { id: "panel", label: "Admin Panel", price: 3000 },
 ] as const;
 
 const INCLUDED_PAGES = 5;
-const PRICE_PER_EXTRA_PAGE = 300;
+const PRICE_PER_EXTRA_PAGE = 250;
 const PRICE_MARGIN = 0.15;
 
 function formatTL(value: number) {

@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { api, ApiError } from "../lib/api";
+import { api } from "../lib/api";
 import { site } from "../content/site";
+import { fallbackPackages } from "../content/packages";
 import type { Package } from "../types";
 import Reveal from "./Reveal";
 
@@ -9,18 +10,19 @@ interface ContactProps {
   prefillMessage: string;
 }
 
-type FormState = "idle" | "loading" | "success" | "error";
+type FormState = "idle" | "loading" | "success";
 
 export default function Contact({ selectedPackage, prefillMessage }: ContactProps) {
-  const [packages, setPackages] = useState<Package[]>([]);
+  const [packages, setPackages] = useState<Package[]>(fallbackPackages);
   const [packageName, setPackageName] = useState("");
   const [message, setMessage] = useState("");
   const [state, setState] = useState<FormState>("idle");
-  const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
     api<Package[]>("/api/packages")
-      .then(setPackages)
+      .then((data) => {
+        if (data.length > 0) setPackages(data);
+      })
       .catch(() => {});
   }, []);
 
@@ -38,7 +40,6 @@ export default function Contact({ selectedPackage, prefillMessage }: ContactProp
     const data = new FormData(form);
 
     setState("loading");
-    setErrorMsg("");
     try {
       await api("/api/leads", {
         method: "POST",
@@ -55,9 +56,22 @@ export default function Contact({ selectedPackage, prefillMessage }: ContactProp
       form.reset();
       setPackageName("");
       setMessage("");
-    } catch (err) {
-      setState("error");
-      setErrorMsg(err instanceof ApiError ? err.message : "Bağlantı hatası, tekrar deneyin");
+    } catch {
+      // Statik yayında API bağlı değilse ziyaretçinin yazdığı bilgileri hazır WhatsApp
+      // mesajına taşı. Mesaj, ziyaretçi WhatsApp'ta gönderene kadar paylaşılmaz.
+      const whatsappMessage = [
+        "Merhaba, tektiklasite.com üzerinden yazıyorum.",
+        `Ad: ${String(data.get("name") ?? "")}`,
+        `E-posta: ${String(data.get("email") ?? "")}`,
+        data.get("phone") ? `Telefon: ${String(data.get("phone"))}` : "",
+        data.get("packageName") ? `Paket: ${String(data.get("packageName"))}` : "",
+        `Mesaj: ${message}`,
+      ]
+        .filter(Boolean)
+        .join("\n");
+      window.location.assign(
+        `https://wa.me/${site.footer.whatsapp}?text=${encodeURIComponent(whatsappMessage)}`
+      );
     }
   }
 
@@ -89,6 +103,16 @@ export default function Contact({ selectedPackage, prefillMessage }: ContactProp
                 {site.footer.email}
               </a>
             </p>
+            <a
+              href={`https://wa.me/${site.footer.whatsapp}?text=${encodeURIComponent(
+                "Merhaba, web sitesi projem için bilgi almak istiyorum."
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-5 inline-flex items-center gap-2 rounded-full border border-lime px-5 py-3 text-sm font-bold uppercase text-lime transition-colors duration-150 hover:bg-lime hover:text-ink"
+            >
+              WhatsApp'tan yaz →
+            </a>
           </Reveal>
 
           <Reveal delay={100}>
@@ -204,12 +228,6 @@ export default function Contact({ selectedPackage, prefillMessage }: ContactProp
                   aria-hidden="true"
                   className="absolute -left-[9999px] h-0 w-0 opacity-0"
                 />
-
-                {state === "error" && (
-                  <p role="alert" className="text-sm text-red-400 sm:col-span-2">
-                    {errorMsg}
-                  </p>
-                )}
 
                 <div className="sm:col-span-2">
                   <button

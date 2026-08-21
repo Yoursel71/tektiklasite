@@ -37,6 +37,10 @@ export default function Hero() {
         {/* Üst şerit: eyebrow + müsaitlik */}
         <div className="anim-hero flex flex-wrap items-center justify-between gap-3 font-mono text-[11px] tracking-widest text-body sm:text-xs">
           <span>{site.hero.eyebrow}</span>
+          <span className="inline-flex items-center gap-2 text-lime">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-lime" aria-hidden="true" />
+            {site.hero.availability}
+          </span>
         </div>
 
         {/* Dev başlık */}
@@ -106,6 +110,13 @@ export default function Hero() {
                 {site.hero.ctaSecondary}
               </a>
             </div>
+            <ul className="mt-5 flex flex-wrap gap-x-5 gap-y-2 font-mono text-[10px] uppercase tracking-widest text-body">
+              {site.hero.proofs.map((proof) => (
+                <li key={proof} className="before:mr-2 before:text-lime before:content-['+']">
+                  {proof}
+                </li>
+              ))}
+            </ul>
           </div>
 
           {/* Dairesel dönen rozet */}

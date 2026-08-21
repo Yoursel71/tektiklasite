@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, ApiError } from "../lib/api";
+import { fallbackPackages } from "../content/packages";
 import type { Package } from "../types";
 import Reveal from "./Reveal";
 
@@ -8,15 +9,18 @@ interface PricingProps {
 }
 
 export default function Pricing({ onSelectPackage }: PricingProps) {
-  const [packages, setPackages] = useState<Package[]>([]);
-  const [error, setError] = useState(false);
+  const [packages, setPackages] = useState<Package[]>(fallbackPackages);
   const [payingId, setPayingId] = useState<number | null>(null);
   const [payError, setPayError] = useState("");
 
   useEffect(() => {
     api<Package[]>("/api/packages")
-      .then(setPackages)
-      .catch(() => setError(true));
+      .then((data) => {
+        if (data.length > 0) setPackages(data);
+      })
+      .catch(() => {
+        // Statik Vercel yayınında API olmayabilir; paketler yerel yedekten görünür kalır.
+      });
   }, []);
 
   async function handlePay(pkg: Package) {
@@ -45,12 +49,6 @@ export default function Pricing({ onSelectPackage }: PricingProps) {
           </h2>
           <span className="font-mono text-xs uppercase tracking-widest">(gizli maliyet yok)</span>
         </Reveal>
-
-        {error && (
-          <p className="mt-10 text-sm">
-            Paketler şu anda yüklenemedi — iletişim formundan bize ulaşın.
-          </p>
-        )}
 
         <div className="mt-12 grid items-stretch gap-5 lg:grid-cols-3">
           {packages.map((pkg, i) => (
@@ -156,7 +154,7 @@ export default function Pricing({ onSelectPackage }: PricingProps) {
         )}
 
         <p className="mt-8 font-mono text-xs uppercase tracking-widest">
-          Kart ödemesi = %50 başlangıç ödemesi, Stripe güvencesiyle. Kalan %50 teslimde.
+          Fiyatlar başlangıç seviyesidir. Net kapsam ve sabit fiyat, ücretsiz keşif görüşmesinde çıkar.
         </p>
       </div>
     </section>

@@ -4,6 +4,7 @@ import Hero from "../components/Hero";
 
 import Manifesto from "../components/Manifesto";
 import Services from "../components/Services";
+import FreeAudit from "../components/FreeAudit";
 import Process from "../components/Process";
 import Portfolio from "../components/Portfolio";
 import Calculator from "../components/Calculator";
@@ -81,6 +82,7 @@ export default function Landing() {
 
         <Manifesto />
         <Services />
+        <FreeAudit onRequest={handleQuote} />
         <Process />
         <Portfolio />
         <Calculator onQuote={handleQuote} />
