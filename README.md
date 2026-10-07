@@ -79,9 +79,11 @@ Boş bırakılırsa online ödeme kapalı kalır, site iletişim formuyla çalı
 
 ## İçerik Düzenleme
 
-- **Metinler / hizmetler / SSS / projeler:** `client/src/content/site.ts`
-- **Paketler ve fiyatlar:** Admin panel → Paketler sekmesi (veritabanından yönetilir)
+Ana sayfa (2026-10-07'den beri sade tek sayfa) tamamen statiktir; API, Stripe veya veritabanı kullanmaz.
+- **Metinler, fiyat, işler, S.S.S, iletişim:** `client/src/content/site.ts` (fiyat için `price` bloğu)
 - **Tema renkleri:** `client/src/index.css` içindeki `@theme` bloğu
+- `server/` ve `/admin` paneli depoda duruyor ama ana sayfa artık kullanmıyor.
+- Eski karmaşık sürüm (hesaplayıcı, shader, admin'e bağlı paketler) `onceki-surum` etiketinde: `git checkout onceki-surum`
 
 ## Production Build
 

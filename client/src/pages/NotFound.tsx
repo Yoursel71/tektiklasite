@@ -24,7 +24,7 @@ export default function NotFound() {
           </span>
         </Link>
         <a
-          href={`mailto:${site.footer.email}`}
+          href={`mailto:${site.email}`}
           className="inline-flex items-center gap-2 rounded-full border border-line px-6 py-3 text-sm font-bold uppercase text-bright transition-colors duration-150 hover:border-lime hover:text-lime"
         >
           Bize yaz
