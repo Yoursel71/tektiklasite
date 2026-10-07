@@ -9,6 +9,8 @@ interface GooeyTextProps {
   cooldownTime?: number;
   className?: string;
   textClassName?: string;
+  /** Morph animasyonu akıcı çalışmazsa bir kez çağrılır */
+  onSlow?: () => void;
 }
 
 export function GooeyText({
@@ -16,8 +18,11 @@ export function GooeyText({
   morphTime = 1,
   cooldownTime = 0.25,
   className,
-  textClassName
+  textClassName,
+  onSlow
 }: GooeyTextProps) {
+  const onSlowRef = React.useRef(onSlow);
+  onSlowRef.current = onSlow;
   const text1Ref = React.useRef<HTMLSpanElement>(null);
   const text2Ref = React.useRef<HTMLSpanElement>(null);
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -42,6 +47,11 @@ export function GooeyText({
     let morph = 0;
     let cooldown = cooldownTime;
     let frameId = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let skipSample = false;
+    let samples = 0;
+    let sampleSum = 0;
+    let reported = false;
 
     const setMorph = (fraction: number) => {
       if (text1Ref.current && text2Ref.current) {
@@ -102,8 +112,28 @@ export function GooeyText({
           }
         }
         doMorph();
+
+        // Kare süresi ölçümü (sadece morph sırasında); 45 ms üstü ortalama = akıcı değil
+        if (skipSample) {
+          skipSample = false;
+        } else if (!reported && dt > 0 && dt < 0.25) {
+          sampleSum += dt;
+          samples += 1;
+          if (samples >= 30) {
+            reported = true;
+            if (sampleSum / samples > 0.045) onSlowRef.current?.();
+          }
+        }
       } else {
         doCooldown();
+        // Kelime beklerken kare üretme: bekleme süresi kadar uyu, sonra morph'a devam et
+        cancelAnimationFrame(frameId);
+        timer = setTimeout(() => {
+          time = new Date(Date.now() - 100);
+          cooldown = 0.01;
+          skipSample = true;
+          animate();
+        }, cooldown * 1000);
       }
     }
 
@@ -111,6 +141,7 @@ export function GooeyText({
 
     return () => {
       cancelAnimationFrame(frameId);
+      if (timer) clearTimeout(timer);
     };
   }, [texts, morphTime, cooldownTime]);
 

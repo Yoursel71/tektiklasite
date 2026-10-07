@@ -1,7 +1,7 @@
 import * as React from "react";
 import { site } from "../content/site";
 import { GooeyText } from "./ui/gooey-text-morphing";
-import { useLiteMotion } from "../lib/useLiteMotion";
+import { useSmallDevice } from "../lib/useSmallDevice";
 
 // three.js ağır — hero arkaplanı lazy yüklenir, ana bundle şişmez
 const CanvasRevealEffect = React.lazy(() =>
@@ -11,7 +11,7 @@ const CanvasRevealEffect = React.lazy(() =>
 // Lime rengi (#d9ff4b) RGB olarak — shader renk kanalı 0-255 bekliyor
 const LIME_RGB: number[][] = [[217, 255, 75]];
 
-// Telefonlarda gooey (blur + SVG filtre) yerine hafif, sadece opacity/transform kullanan kelime değişimi
+// Cihaz gooey animasyonunu akıcı çalıştıramazsa: sadece opacity/transform kullanan basit kelime değişimi
 function RotatingWord({ words }: { words: readonly string[] }) {
   const [i, setI] = React.useState(0);
   React.useEffect(() => {
@@ -29,23 +29,30 @@ export default function Hero() {
   const [reduceMotion] = React.useState(
     () => window.matchMedia("(prefers-reduced-motion: reduce)").matches
   );
-  // Telefon / dokunmatik cihaz: WebGL shader ve gooey animasyonu yok (kasma + 900 KB gereksiz indirme)
-  const lite = useLiteMotion();
+  // Animasyonlar her cihazda çalışır; telefonda düşük güç modu (dpr 1, 30 fps).
+  // Cihaz yine de yetişemezse (ölçülür) otomatik olarak statik/basit versiyona düşer.
+  const small = useSmallDevice();
+  const [shaderOk, setShaderOk] = React.useState(true);
+  const [gooeyOk, setGooeyOk] = React.useState(true);
+  const words = React.useMemo(() => [...site.hero.rotatingWords], []);
 
   return (
     <section className="relative overflow-hidden border-b border-line pt-32 pb-16 sm:pt-40 sm:pb-24">
-      {/* Nokta-matrisi arkaplan: masaüstünde shader, telefonda sabit CSS noktaları */}
+      {/* Nokta-matrisi shader arkaplanı — merkezden açılıp hafifçe yanıp söner.
+          Cihaz yetişemezse (ya da hareket azaltma tercihi varsa) sabit CSS noktaları. */}
       <div className="absolute inset-0 opacity-25" aria-hidden="true">
-        {lite ? (
+        {reduceMotion || !shaderOk ? (
           <div className="dots-bg absolute inset-0" />
         ) : (
-          <React.Suspense fallback={null}>
+          <React.Suspense fallback={<div className="dots-bg absolute inset-0" />}>
             <CanvasRevealEffect
               animationSpeed={2.5}
               containerClassName="bg-transparent"
               colors={LIME_RGB}
               dotSize={2.5}
               showGradient={false}
+              lowPower={small}
+              onSlow={() => setShaderOk(false)}
             />
           </React.Suspense>
         )}
@@ -95,13 +102,14 @@ export default function Hero() {
           <span className="text-body">*{site.hero.rotatingPrefix}</span>
           {reduceMotion ? (
             <span className="font-bold text-lime">{site.hero.rotatingWords[0]}</span>
-          ) : lite ? (
+          ) : !gooeyOk ? (
             <RotatingWord words={site.hero.rotatingWords} />
           ) : (
             <GooeyText
-              texts={[...site.hero.rotatingWords]}
+              texts={words}
               morphTime={1}
               cooldownTime={1.5}
+              onSlow={() => setGooeyOk(false)}
               textClassName="text-[length:inherit] md:text-[length:inherit] font-bold leading-none text-lime whitespace-nowrap"
             />
           )}

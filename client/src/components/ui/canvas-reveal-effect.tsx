@@ -28,6 +28,8 @@ export const CanvasRevealEffect = ({
   dotSize,
   showGradient = true,
   reverse = false,
+  lowPower = false,
+  onSlow,
 }: {
   animationSpeed?: number;
   opacities?: number[];
@@ -36,6 +38,10 @@ export const CanvasRevealEffect = ({
   dotSize?: number;
   showGradient?: boolean;
   reverse?: boolean;
+  /** Telefon modu: dpr 1, 30 fps, düşük güç GPU */
+  lowPower?: boolean;
+  /** Cihaz hedef kare hızını tutamazsa bir kez çağrılır (üst bileşen statik arkaplana geçer) */
+  onSlow?: () => void;
 }) => {
   return (
     <div className={cn("h-full relative w-full", containerClassName)}>
@@ -49,6 +55,8 @@ export const CanvasRevealEffect = ({
             animation_speed_factor_${animationSpeed.toFixed(1)}_;
           `}
           center={["x", "y"]}
+          lowPower={lowPower}
+          onSlow={onSlow}
         />
       </div>
       {showGradient && (
@@ -65,6 +73,8 @@ interface DotMatrixProps {
   dotSize?: number;
   shader?: string;
   center?: ("x" | "y")[];
+  lowPower?: boolean;
+  onSlow?: () => void;
 }
 
 const DotMatrix: React.FC<DotMatrixProps> = ({
@@ -74,6 +84,8 @@ const DotMatrix: React.FC<DotMatrixProps> = ({
   dotSize = 2,
   shader = "",
   center = ["x", "y"],
+  lowPower = false,
+  onSlow,
 }) => {
   const uniforms = React.useMemo(() => {
     let colorsArray = [colors[0], colors[0], colors[0], colors[0], colors[0], colors[0]];
@@ -181,6 +193,8 @@ const DotMatrix: React.FC<DotMatrixProps> = ({
             fragColor.rgb *= fragColor.a;
         }`}
       uniforms={uniforms}
+      lowPower={lowPower}
+      onSlow={onSlow}
     />
   );
 };
@@ -265,10 +279,64 @@ const ShaderMaterial = ({ source, uniforms }: ShaderProps) => {
   );
 };
 
-const Shader: React.FC<ShaderProps> = ({ source, uniforms }) => {
+// Düşük güç modunda kareleri 30 fps'e sabitler (frameloop="demand" + zamanlayıcı)
+const Pacer = ({ fps }: { fps: number }) => {
+  const invalidate = useThree((state) => state.invalidate);
+  React.useEffect(() => {
+    const id = setInterval(invalidate, 1000 / fps);
+    return () => clearInterval(id);
+  }, [invalidate, fps]);
+  return null;
+};
+
+// İlk saniyelerde gerçek kare süresini ölçer; cihaz yetişemiyorsa onSlow çağırır
+const FpsGuard = ({ slowDelta, onSlow }: { slowDelta: number; onSlow: () => void }) => {
+  const stat = React.useRef({ t: 0, n: 0, sum: 0, done: false });
+  useFrame((_, delta) => {
+    const s = stat.current;
+    if (s.done || delta > 0.25) return; // uzun duraklama (sekme/scroll) ölçümü bozmasın
+    s.t += delta;
+    if (s.t < 1.2) return; // ısınma: shader derleme + ilk kareler
+    s.n += 1;
+    s.sum += delta;
+    if (s.n >= 40) {
+      s.done = true;
+      if (s.sum / s.n > slowDelta) onSlow();
+    }
+  });
+  return null;
+};
+
+const Shader: React.FC<ShaderProps & { lowPower?: boolean; onSlow?: () => void }> = ({
+  source,
+  uniforms,
+  lowPower = false,
+  onSlow,
+}) => {
+  const wrapRef = React.useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = React.useState(true);
+
+  // Ekranda değilken (aşağı kaydırınca) hiç kare çizme
+  React.useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([entry]) => setVisible(entry.isIntersecting));
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
   return (
-    <Canvas className="absolute inset-0 h-full w-full" dpr={[1, 1.5]}>
-      <ShaderMaterial source={source} uniforms={uniforms} />
-    </Canvas>
+    <div ref={wrapRef} className="absolute inset-0">
+      <Canvas
+        className="absolute inset-0 h-full w-full"
+        dpr={lowPower ? 1 : [1, 1.5]}
+        frameloop={!visible ? "never" : lowPower ? "demand" : "always"}
+        gl={{ antialias: false, alpha: true, powerPreference: lowPower ? "low-power" : "default" }}
+      >
+        <ShaderMaterial source={source} uniforms={uniforms} />
+        {lowPower && <Pacer fps={30} />}
+        {onSlow && <FpsGuard slowDelta={lowPower ? 0.055 : 0.04} onSlow={onSlow} />}
+      </Canvas>
+    </div>
   );
 };
