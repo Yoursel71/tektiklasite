@@ -1,30 +1,253 @@
-import { site, whatsappLink } from "../content/site";
+import { useEffect, useState, type FormEvent } from "react";
+import { api } from "../lib/api";
+import { site } from "../content/site";
+import { fallbackPackages } from "../content/packages";
+import type { Package } from "../types";
+import Reveal from "./Reveal";
 
-export default function Contact() {
+interface ContactProps {
+  selectedPackage: string;
+  prefillMessage: string;
+}
+
+type FormState = "idle" | "loading" | "success";
+
+export default function Contact({ selectedPackage, prefillMessage }: ContactProps) {
+  const [packages, setPackages] = useState<Package[]>(fallbackPackages);
+  const [packageName, setPackageName] = useState("");
+  const [message, setMessage] = useState("");
+  const [state, setState] = useState<FormState>("idle");
+
+  useEffect(() => {
+    api<Package[]>("/api/packages")
+      .then((data) => {
+        if (data.length > 0) setPackages(data);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (selectedPackage) setPackageName(selectedPackage);
+  }, [selectedPackage]);
+
+  useEffect(() => {
+    if (prefillMessage) setMessage(prefillMessage);
+  }, [prefillMessage]);
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const data = new FormData(form);
+
+    setState("loading");
+    try {
+      await api("/api/leads", {
+        method: "POST",
+        body: {
+          name: data.get("name"),
+          email: data.get("email"),
+          phone: data.get("phone"),
+          packageName: data.get("packageName"),
+          message,
+          website: data.get("website"),
+        },
+      });
+      setState("success");
+      form.reset();
+      setPackageName("");
+      setMessage("");
+    } catch {
+      // Statik yayında API bağlı değilse ziyaretçinin yazdığı bilgileri hazır WhatsApp
+      // mesajına taşı. Mesaj, ziyaretçi WhatsApp'ta gönderene kadar paylaşılmaz.
+      const whatsappMessage = [
+        "Merhaba, tektiklasite.com üzerinden yazıyorum.",
+        `Ad: ${String(data.get("name") ?? "")}`,
+        `E-posta: ${String(data.get("email") ?? "")}`,
+        data.get("phone") ? `Telefon: ${String(data.get("phone"))}` : "",
+        data.get("packageName") ? `Paket: ${String(data.get("packageName"))}` : "",
+        `Mesaj: ${message}`,
+      ]
+        .filter(Boolean)
+        .join("\n");
+      window.location.assign(
+        `https://wa.me/${site.footer.whatsapp}?text=${encodeURIComponent(whatsappMessage)}`
+      );
+    }
+  }
+
+  const inputClass =
+    "w-full border-0 border-b border-line bg-transparent px-0 py-3 text-base text-bright placeholder:text-body/40 transition-colors duration-150 focus:border-lime focus:outline-none";
+  const labelClass = "block font-mono text-[11px] uppercase tracking-widest text-lime";
+
   return (
     <section id="iletisim" className="scroll-mt-20 py-20 sm:py-28">
-      <div className="mx-auto max-w-3xl px-4 text-center sm:px-6">
-        <h2 className="text-4xl font-bold tracking-tight text-bright sm:text-6xl">
-          Bir mesaj <span className="text-lime">yeter.</span>
-        </h2>
-        <p className="mx-auto mt-5 max-w-md text-base leading-relaxed">
-          İşletmenin adını ve ne sattığını yaz, gerisini biz hallederiz.
-        </p>
-        <a
-          href={whatsappLink}
-          className="mt-9 inline-block rounded-full bg-lime px-8 py-4 text-sm font-bold text-ink transition-transform duration-150 hover:scale-[1.03] active:scale-[0.98]"
-        >
-          WhatsApp'tan yaz →
-        </a>
-        <p className="mt-8 font-mono text-xs">
-          <a href={`tel:${site.phone.replace(/\s/g, "")}`} className="transition-colors duration-150 hover:text-lime">
-            {site.phone}
-          </a>
-          <span aria-hidden="true" className="mx-3 text-line">|</span>
-          <a href={`mailto:${site.email}`} className="transition-colors duration-150 hover:text-lime">
-            {site.email}
-          </a>
-        </p>
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        <div className="grid gap-12 lg:grid-cols-[1fr_1.4fr]">
+          <Reveal>
+            <h2 className="text-4xl font-bold uppercase tracking-tight text-bright sm:text-6xl">
+              Projeni
+              <br />
+              <span className="text-outline-lime">Anlat</span>
+            </h2>
+            <p className="mt-6 max-w-sm text-sm leading-relaxed sm:text-base">
+              Formu doldur, 24 saat içinde dönelim. İlk görüşme ücretsiz — satış konuşması değil,
+              keşif görüşmesi.
+            </p>
+            <p className="mt-8 font-mono text-xs uppercase tracking-widest">
+              ya da direkt yaz:
+              <br />
+              <a
+                href={`mailto:${site.footer.email}`}
+                className="mt-2 inline-block text-base normal-case tracking-normal text-bright underline decoration-lime decoration-2 underline-offset-4 transition-colors duration-150 hover:text-lime"
+              >
+                {site.footer.email}
+              </a>
+            </p>
+            <a
+              href={`https://wa.me/${site.footer.whatsapp}?text=${encodeURIComponent(
+                "Merhaba, web sitesi projem için bilgi almak istiyorum."
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-5 inline-flex items-center gap-2 rounded-full border border-lime px-5 py-3 text-sm font-bold uppercase text-lime transition-colors duration-150 hover:bg-lime hover:text-ink"
+            >
+              WhatsApp'tan yaz →
+            </a>
+          </Reveal>
+
+          <Reveal delay={100}>
+            {state === "success" ? (
+              <div role="status" className="border border-lime p-10 text-center">
+                <p className="text-2xl font-bold uppercase text-lime">Talebin alındı ✓</p>
+                <p className="mt-3 text-sm sm:text-base">
+                  En geç 24 saat içinde e-posta veya telefonla dönüş yapacağız.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setState("idle")}
+                  className="mt-8 rounded-full border border-line px-6 py-3 text-sm font-bold text-bright transition-colors duration-150 hover:border-lime hover:text-lime"
+                >
+                  Yeni talep gönder
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="grid gap-7 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="contact-name" className={labelClass}>
+                    01 — ad soyad *
+                  </label>
+                  <input
+                    id="contact-name"
+                    name="name"
+                    required
+                    minLength={2}
+                    maxLength={80}
+                    autoComplete="name"
+                    placeholder="Adın Soyadın"
+                    className={inputClass}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="contact-email" className={labelClass}>
+                    02 — e-posta *
+                  </label>
+                  <input
+                    id="contact-email"
+                    name="email"
+                    type="email"
+                    required
+                    maxLength={120}
+                    autoComplete="email"
+                    placeholder="ornek@mail.com"
+                    className={inputClass}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="contact-phone" className={labelClass}>
+                    03 — telefon
+                  </label>
+                  <input
+                    id="contact-phone"
+                    name="phone"
+                    type="tel"
+                    maxLength={30}
+                    autoComplete="tel"
+                    placeholder="+90 5xx xxx xx xx"
+                    className={inputClass}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="contact-package" className={labelClass}>
+                    04 — paket
+                  </label>
+                  <select
+                    id="contact-package"
+                    name="packageName"
+                    value={packageName}
+                    onChange={(e) => setPackageName(e.target.value)}
+                    className={`${inputClass} cursor-pointer`}
+                  >
+                    <option value="" className="bg-surface">
+                      Henüz karar vermedim
+                    </option>
+                    {packages.map((pkg) => (
+                      <option key={pkg.id} value={pkg.name} className="bg-surface">
+                        {pkg.name} — {pkg.price}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label htmlFor="contact-message" className={labelClass}>
+                    05 — derdini anlat *
+                  </label>
+                  <textarea
+                    id="contact-message"
+                    name="message"
+                    required
+                    minLength={10}
+                    maxLength={2000}
+                    rows={4}
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder="Nasıl bir site istiyorsun? Ne satıyorsun, hedefin ne?"
+                    className={`${inputClass} resize-y`}
+                  />
+                </div>
+
+                {/* Honeypot — görünmez, botlar doldurur */}
+                <input
+                  type="text"
+                  name="website"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  aria-hidden="true"
+                  className="absolute -left-[9999px] h-0 w-0 opacity-0"
+                />
+
+                <div className="sm:col-span-2">
+                  <button
+                    type="submit"
+                    disabled={state === "loading"}
+                    className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-lime px-7 py-4 text-sm font-bold uppercase text-ink transition-transform duration-150 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                  >
+                    {state === "loading" ? "Gönderiliyor..." : "Gönder"}
+                    <span
+                      aria-hidden="true"
+                      className="transition-transform duration-150 group-hover:translate-x-1"
+                    >
+                      →
+                    </span>
+                  </button>
+                </div>
+              </form>
+            )}
+          </Reveal>
+        </div>
       </div>
     </section>
   );
