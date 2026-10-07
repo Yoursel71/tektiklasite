@@ -267,7 +267,7 @@ const ShaderMaterial = ({ source, uniforms }: ShaderProps) => {
 
 const Shader: React.FC<ShaderProps> = ({ source, uniforms }) => {
   return (
-    <Canvas className="absolute inset-0 h-full w-full">
+    <Canvas className="absolute inset-0 h-full w-full" dpr={[1, 1.5]}>
       <ShaderMaterial source={source} uniforms={uniforms} />
     </Canvas>
   );

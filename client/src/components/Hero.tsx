@@ -1,6 +1,7 @@
 import * as React from "react";
 import { site } from "../content/site";
 import { GooeyText } from "./ui/gooey-text-morphing";
+import { useLiteMotion } from "../lib/useLiteMotion";
 
 // three.js ağır — hero arkaplanı lazy yüklenir, ana bundle şişmez
 const CanvasRevealEffect = React.lazy(() =>
@@ -10,16 +11,34 @@ const CanvasRevealEffect = React.lazy(() =>
 // Lime rengi (#d9ff4b) RGB olarak — shader renk kanalı 0-255 bekliyor
 const LIME_RGB: number[][] = [[217, 255, 75]];
 
+// Telefonlarda gooey (blur + SVG filtre) yerine hafif, sadece opacity/transform kullanan kelime değişimi
+function RotatingWord({ words }: { words: readonly string[] }) {
+  const [i, setI] = React.useState(0);
+  React.useEffect(() => {
+    const id = setInterval(() => setI((n) => (n + 1) % words.length), 2400);
+    return () => clearInterval(id);
+  }, [words.length]);
+  return (
+    <span key={i} className="word-in font-bold whitespace-nowrap text-lime">
+      {words[i]}
+    </span>
+  );
+}
+
 export default function Hero() {
   const [reduceMotion] = React.useState(
     () => window.matchMedia("(prefers-reduced-motion: reduce)").matches
   );
+  // Telefon / dokunmatik cihaz: WebGL shader ve gooey animasyonu yok (kasma + 900 KB gereksiz indirme)
+  const lite = useLiteMotion();
 
   return (
     <section className="relative overflow-hidden border-b border-line pt-32 pb-16 sm:pt-40 sm:pb-24">
-      {/* Nokta-matrisi shader arkaplanı — merkezden açılıp hafifçe yanıp söner */}
-      {!reduceMotion && (
-        <div className="absolute inset-0 opacity-25" aria-hidden="true">
+      {/* Nokta-matrisi arkaplan: masaüstünde shader, telefonda sabit CSS noktaları */}
+      <div className="absolute inset-0 opacity-25" aria-hidden="true">
+        {lite ? (
+          <div className="dots-bg absolute inset-0" />
+        ) : (
           <React.Suspense fallback={null}>
             <CanvasRevealEffect
               animationSpeed={2.5}
@@ -29,9 +48,9 @@ export default function Hero() {
               showGradient={false}
             />
           </React.Suspense>
-          <div className="absolute inset-0 bg-gradient-to-b from-ink via-transparent to-ink" />
-        </div>
-      )}
+        )}
+        <div className="absolute inset-0 bg-gradient-to-b from-ink via-transparent to-ink" />
+      </div>
 
       <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
         {/* Üst şerit: eyebrow + müsaitlik */}
@@ -76,6 +95,8 @@ export default function Hero() {
           <span className="text-body">*{site.hero.rotatingPrefix}</span>
           {reduceMotion ? (
             <span className="font-bold text-lime">{site.hero.rotatingWords[0]}</span>
+          ) : lite ? (
+            <RotatingWord words={site.hero.rotatingWords} />
           ) : (
             <GooeyText
               texts={[...site.hero.rotatingWords]}
